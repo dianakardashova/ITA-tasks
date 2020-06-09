@@ -1,5 +1,97 @@
+import os
 from abc import ABC, abstractmethod
-from enum import Enum, unique
+from enum import Enum
+
+
+class Option(ABC):
+    """
+    Сlass creates an instance of the desired class.
+    """
+    @abstractmethod
+    def analyse_file(self, file_path: str):
+        """
+        Method must be implemented by class AnnotationOption or class FilterOption.
+        :param file_path: path to the file which want to analyze.
+        """
+        pass
+
+    @staticmethod
+    def get_option(option: str):
+        """
+        Method decides which instance it will create FilterOption() or AnnotationOption().
+        :param option: string, for instance 'filter'.
+        :return: instance of the desired class.
+        """
+        if option == 'filter':
+            return FilterOption()
+        elif option == 'annotate':
+            return AnnotationOption()
+        else: raise OptionError(option)
+
+    def check_file_path(self, file_path):
+        if os.path.exists(file_path):
+            if file_path.endswith('.txt'):
+                with open(file_path, 'r', encoding='utf-8') as file_stream:
+                    return file_stream
+        else: return False                  #check this
+
+
+class OptionError(ValueError):
+    def __init__(self, option):
+        super().__init__('No such option: \'{}\''.format(option))
+
+
+class AnnotationOption(Option):
+    def analyse_file(self, file_path):
+        """
+        Method has to display the information about which rules are
+        applicable for each line using <line number>: [rule] ... format.
+        :param file_path: path to the file which want to analyze.
+        :return: None
+        """
+        if os.path.exists(file_path):
+            if file_path.endswith('.txt'):
+                with open(file_path, 'r', encoding='utf8') as file_stream:
+                    for num, line in enumerate(file_stream, 1):
+                        rules_for_line = list()
+
+                        for rule in RuleDisplay:
+                            if rule.value.matches(line.strip()):
+                                rules_for_line.append(rule.value.name())
+
+                        for rule in RuleNotDisplay:
+                            if rule.value.matches(line.strip()):
+                                rules_for_line.append(rule.value.name())
+                        print('{}: {}'.format(num, ' '.join(rules_for_line)))
+            else: print('Wrong file extension.')
+
+        else: print('No such file: \'{}\''.format(file_path))
+
+
+class FilterOption(Option):
+    def analyse_file(self, file_path):
+        """
+        Method should display lines based on rules, that are contained at the Class Rule.
+        :param file_path: path to the file which want to analyze.
+        :return: None
+        """
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding="utf8") as file_stream:
+                for line in file_stream:
+
+                    priority_display = 0
+                    for rule in RuleDisplay:
+                        if rule.value.matches(line):
+                            priority_display += 1
+
+                    priority_not_display = 0
+                    for rule in RuleNotDisplay:
+                        if rule.value.matches(line):
+                            priority_not_display += 1
+
+                    if priority_display >= priority_not_display:
+                        print(line.strip())
+        else: print('No such file: \'{}\''.format(file_path))
 
 
 class Filter(ABC):
@@ -113,7 +205,6 @@ class ConsistsNonLetterChars(Filter):
             return False
 
 
-@unique
 class RuleDisplay(Enum):
     """
     Class consits only from instances of rules, that must be printed.
@@ -123,7 +214,6 @@ class RuleDisplay(Enum):
     RULE_FP003 = AtLeastFiveALetters()
 
 
-@unique
 class RuleNotDisplay(Enum):
     """
     Class consits only from instances of rules, that must not be printed.
@@ -131,72 +221,3 @@ class RuleNotDisplay(Enum):
     RULE_FN201 = MoreThreeZLetters()
     RULE_FN202 = EmptyLine()
     RULE_FN203 = ConsistsNonLetterChars()
-
-
-class Option(ABC):
-    """
-    Сlass creates an instance of the desired class.
-    """
-    @abstractmethod
-    def filter_file(self, file: str):
-        """
-        Method must be implemented by class AnnotationOption or class FilterOption.
-        :param file: path to the file which want to analyze.
-        """
-        pass
-
-    @staticmethod
-    def get_option(option: str):
-        """
-        Method decides which instance it will create FilterOption() or AnnotationOption().
-        :param option: string, for instance 'filter'.
-        :return: instance of the desired class.
-        """
-        if option == 'filter':
-            return FilterOption()
-        elif option == 'annotate':
-            return AnnotationOption()
-
-
-class AnnotationOption(Option):
-    def filter_file(self, file):
-        """
-        Method has to display the information about which rules are
-        applicable for each line using <line number>: [rule] ... format.
-        :param file: path to the file which want to analyze.
-        :return: None
-        """
-        with open(file, 'r', encoding='utf8') as file_stream:
-            for num, line in enumerate(file_stream, 1):
-                rules_for_line = list()
-                for rule in RuleDisplay:
-                    if rule.value.matches(line.strip()):
-                        rules_for_line.append(rule.value.name())
-                for rule in RuleNotDisplay:
-                    if rule.value.matches(line.strip()):
-                        rules_for_line.append(rule.value.name())
-                print('{}: {}'.format(num, ' '.join(rules_for_line)))
-
-
-class FilterOption(Option):
-    def filter_file(self, file):
-        """
-        Method should display lines based on rules, that are contained at the Class Rule.
-        :param file: path to the file which want to analyze.
-        :return: None
-        """
-        with open(file, 'r', encoding="utf8") as file_stream:
-            for line in file_stream:
-
-                priority_display = 0
-                for rule in RuleDisplay:
-                    if rule.value.matches(line):
-                        priority_display += 1
-
-                priority_not_display = 0
-                for rule in RuleNotDisplay:
-                    if rule.value.matches(line):
-                        priority_not_display += 1
-
-                if priority_display >= priority_not_display:
-                    print(line.strip())

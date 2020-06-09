@@ -1,11 +1,46 @@
-# from python07.model import Filter, EndsWithDot, LessOneHundredChars, AtLeastFiveALetters, MoreThreeZLetters, EmptyLine, ConsistsNonLetterChars, Rule, Option
-from python07.model import Option
+from python07.model import Option, OptionError
 import sys
 
 
+def main(command_line_arguments):
+
+    if len(command_line_arguments) == 3:
+        try:
+            option = Option.get_option(command_line_arguments[1])
+        except OptionError as error:
+            print(error)
+        else:
+            option.analyse_file(command_line_arguments[2])
+
+    else:
+        print('Wrong number of command line arguments passed.')
+
+
 if __name__ == '__main__':
-    option = Option.get_option(sys.argv[1])
-    option.filter_file(sys.argv[2])
+    main(sys.argv)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # if Option.option_main(sys.argv):
+    #     try:
+    #         option = Option.get_option(sys.argv[1])
+    #     except OptionError as error:
+    #         print(error)
+    #     else:
+    #         option.analyse_file(sys.argv[2])
+
+
 
 
 
